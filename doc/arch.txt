@@ -6,11 +6,12 @@ CPU SPECS:
 - 8-bits registers
 - 8-bits I/O port
 
-- RISC Single-Cycle FDE
+- RISC FDE
 - 256 adresing and 65536 with paging
 - Program lives in RAM
 - Low cust CPU
 - PC inc +1 after instruction
+- Subtract with two complement
 
 - Clock 3 stages:
 - clock-up  is the stage on the decoder works to prepare path
@@ -25,32 +26,4 @@ SIGNALS PIN:
 - receive_port (external dispositive send a pulse here to say re send info in input buffer)
 - send_port (cpu sends a pulse to say the program put data in output buffer)
 
-ALU FLAGS:
-- negative: if MSB is 1
-- zero: if all bits is 0
-- positive: if not negative and not zero
-- overflow: MSB carryout XOR MSB carryin
-- carry: if MSB carryout
-- notcarry: if not msb carryout
-INPUT FLAGS:
-- input: ON if cpu receive from dispositive a pulse in pin receive_port
-
-REGISTERS: - HEX Code | Name | Mnemonic
-0 Accumulator    (ACC)
-1 Base           (BASE)
-2 Counter        (COUNT)
-3 Data           (DATA)
-4 Ram-Page       (RP)
-5 Ram-Addr       (RA)
-6 Stack-Page     (SP)
-7 Stack-Addr     (SA)
-8 Pointer-1-High (P1H)
-9 Pointer-1-Low  (P1L)
-A Pointer-2-High (P2H)
-B Pointer-2-Low  (P2L)
-C Helper1        (H1)
-D Helper2        (H2)
-E Helper3        (H3)
-F Flag           (FL)
-
-ISA: See file isa.txt
+ISA, REGS and ALU FLAGS: See file isa.txt

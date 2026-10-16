@@ -1,22 +1,39 @@
-REGISTERS: - Name | Mnemonic
-Accumulator    (ACC)
-Base           (BASE)
-Counter        (COUNT)
-Data           (DATA)
-Ram-Page       (RP)
-Ram-Addr       (RA)
-Stack-Page     (SP)
-Stack-Addr     (SA)
-Pointer-1-High (P1H)
-Pointer-1-Low  (P1L)
-Pointer-2-High (P2H)
-Pointer-2-Low  (P2L)
-Helper1        (H1)
-Helper2        (H2)
-Helper3        (H3)
-Flag           (FL)
+ALU REAL FLAGS:
+- negative: if MSB is 1
+- zero: if all bits is 0
+- overflow: MSB carryout XOR MSB carryin
+- carry: if MSB carryout
+ALU CALCULATED FLAGS:
+- positive: if not negative and not zero
+- notzero: if not zero
+INPUT FLAGS:
+- input: ON if cpu receive from dispositive a pulse in pin receive_port
 
-- RFP = Ram full Pointer   (RP + RA)
+REGISTERS: - HEX Code | Name | Mnemonic
+0 Accumulator    (ACC)
+1 Base           (BASE)
+2 Counter        (COUNT)
+3 Ram-Page       (RP)
+4 Ram-Addr       (RA)
+5 Stack-Page     (SP)
+6 Stack-Addr     (SA)
+7 Pointer-1-High (P1H)
+8 Pointer-1-Low  (P1L)
+9 Pointer-2-High (P2H)
+A Pointer-2-Low  (P2L)
+B Helper1        (H1)
+C Helper2        (H2)
+D Helper3        (H3)
+E Helper4        (H4)
+F Flag           (FL)
+
+REGISTER FLAGS (in byte positions):
+0 - negative
+1 - zero
+2 - overflow
+3 - carry
+
+- RFP = Ram full Pointer   (RP + RA) - Used for store 16bits addr for copy in pc
 - SFP = Stack full Pointer (SP + SA)
 - P1F = Pointer 1 (High + Low)
 - P2F = Pointer 2 (High + Low)
@@ -24,62 +41,79 @@ Flag           (FL)
 - X is nibble value
 - RX is a register
 - All mnemonics is here
-
+- 1 to 3: Imediate
+- 4 to 7: Ram
+- 8 to 9: Mov
+- A to C: Get
+- D     : Alu
+- E     : Input, Misc and hardware aceleration instruction
 Suported mnemonics:
-NOP - Make nothinh
+Family 0:
+NOP
 
-IMMH X - Load X in Imediate buffer high
-IMML X - Load X in Imediate buffer low
-IMM RX - Load Imediate buffer value in RX and Imediate buffer dont clean
+Family 1:
+IMMH X - Load X in Imediate buffer High
+Family 2:
+IMML X - Load X in Imediate buffer Low
+Family 3:
+IMM X - Load Imediate buffer value in RX and Imediate buffer dont clean
 
-LOAD RX - Load ram value RFP in RX
+Family 4:
+LOADSFP RX - Load RAM[SFP] in RX
+Family 5:
+STORESFP RX - Store RX value in RAM[SFP]
+Family 6:
 LOADP1 RX - Load ram value P1F in RX
-
-STORE RX - Store RX value in ram RFP
+Family 7:
 STOREP2 RX - Store RX value in ram P2F
 
+Family 8:
 MOVA RX - Mov ACC value to RX
+Family 9:
 MOVC RX - Mov COUNT value to RX
 
+Family A:
 AGET RX - Mov RX value to ACC
+Family B:
 BGET RX - Mov RX value to BASE
+Family C:
 CGET RX - Mov RX value to COUNT
 
+Family D:
 SUM     - ACC = ACC + BASE   (Update all alu flags)
 SUB     - ACC = ACC - BASE   (Update all alu flags)
-SLF     - ACC = BASE << 1    (Update negative, zero and positive alu flags)
-SRG     - ACC = BASE >> 1    (Update negative, zero and positive alu flags)
-NOT     - ACC = NOT BASE     (Update negative, zero and positive alu flags)
-AND     - ACC = ACC AND BASE (Update negative, zero and positive alu flags)
-OR      - ACC = ACC OR BASE  (Update negative, zero and positive alu flags)
-XOR     - ACC = ACC XOR BASE (Update negative, zero and positive alu flags)
+SHL     - ACC = ACC << 1     (Update only negative and zero alu flags) - EX 10010111 to 00101110
+SHR     - ACC = ACC >> 1     (Update only negative and zero alu flags) - EX 10010111 to 01001011
+NOT     - ACC = NOT ACC      (Update only negative and zero alu flags)
+AND     - ACC = ACC AND BASE (Update only negative and zero alu flags)
+OR      - ACC = ACC OR BASE  (Update only negative and zero alu flags)
+XOR     - ACC = ACC XOR BASE (Update only negative and zero alu flags)
 JMP     - JMP to RFP
 JNEG    - JMP to RFP if negative flag
 JZ      - JMP to RFP if zero flag
 JPOS    - JMP to RFP if positive flag
 JO      - JMP to RFP if overflow flag
 JC      - JMP to RFP if carry flag
-JNC     - JMP to RFP if not carry flag
+JNZ     - JMP to RFP if notzero flag
 JINP    - JMP to RFP if input flag
 
-INCSFP  - SFP = SFP + 1
-DECSFP  - SFP = SFP - 1
-INCP1F  - P1F = P1F + 1
-DECP1F  - P1F = P1F - 1
-
-INCP2F  - P2F = P2F + 1
-DECP2F  - P2F = P2F - 1
-INCCOUNT (Update negative, zero and positive alu flags) - COUNT = COUNT + 1
-DECCOUNT (Update negative, zero and positive alu flags) - COUNT = COUNT - 1
-
-SEND    - Move DATA to output_port buffer and send a pulse in pin send_port
-RECEIVE - Move input_port buffer to DATA
+Family E:
+INCRFP
+DECRFP
+INCSFP
+DECSFP
+INCP1F
+DECP1F
+INCP2F
+DECP2F
+INCCOUNT (Update only negative and zero alu flags)
+DECCOUNT (Update only negative and zero alu flags)
 MOV1    - Move P1F to RFP
 MOV2    - Move P2F to RFP
-
-CLA     - Clear ACC
-CLB     - Clear BASE
-CLF     - Clear Flags
+SEND    - Move ACC to output_port buffer and send a pulse in pin send_port
+RECEIVE - Move input_port buffer to ACC (and set off flag input)
+CLA     - Clear ALU (base, acc and flags)
 PC      - Copy PC to RFP
 
-HALT  - Stop cpu
+Family F:
+HALT
