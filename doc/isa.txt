@@ -1,0 +1,125 @@
+ALU FLAGS:
+- negative: if MSB is 1
+- zero: if all bits is 0
+- positive: if not negative and not zero
+- overflow: MSB carryout XOR MSB carryin
+- carry: if MSB carryout
+- notcarry: if not msb carryout
+INPUT FLAGS:
+- input: ON if cpu receive from dispositive a pulse in pin receive_port
+
+REGISTERS: - HEX Code | Name | Mnemonic
+0 Accumulator    (ACC)
+1 Base           (BASE)
+2 Counter        (COUNT)
+3 Data           (DATA)
+4 Ram-Page       (RP)
+5 Ram-Addr       (RA)
+6 Stack-Page     (SP)
+7 Stack-Addr     (SA)
+8 Pointer-1-High (P1H)
+9 Pointer-1-Low  (P1L)
+A Pointer-2-High (P2H)
+B Pointer-2-Low  (P2L)
+C Helper1        (H1)
+D Helper2        (H2)
+E Helper3        (H3)
+F Flag           (FL)
+
+REGISTER FLAGS (in byte positions):
+0 - negative
+1 - zero
+2 - overflow
+3 - carry
+
+- RFP = Ram full Pointer   (RP + RA)
+- SFP = Stack full Pointer (SP + SA)
+- P1F = Pointer 1 (High + Low)
+- P2F = Pointer 2 (High + Low)
+
+- Letter X means opcode is anywhere
+- I reffer to regs with Mnemonic/Hex code
+- 1 to 3: Imediate
+- 4 to 7: Ram
+- 8 to 9: Mov
+- A to C: Get
+- D     : Alu
+- E     : Input, Misc and hardware aceleration instruction
+- RX = REG X (this X is REG table hex value)
+
+ISA:
+Family 0:
+X - NOP
+
+Family 1:
+X - IMMH X - Load X in Imediate buffer High
+Family 2:
+X - IMML X - Load X in Imediate buffer Low
+Family 3:
+X - IMM X - Load Imediate buffer value in RX and Imediate buffer dont clean
+
+Family 4:
+X - LOAD RX - Load ram value RFP in RX
+Family 5:
+X - LOAD RX - Load ram value P1F in RX
+Family 6:
+X - STORE RX - Store RX value in ram RFP
+Family 7:
+X - STORE RX - Store RX value in ram P2F
+
+Family 8:
+X - MOVA RX - Mov ACC value to RX
+Family 9:
+X - MOVC RX - Mov COUNT value to RX
+
+Family A:
+X - AGET RX - Mov RX value to ACC
+Family B:
+X - BGET RX - Mov RX value to BASE
+Family C:
+X - CGET RX - Mov RX value to COUNT
+
+Family D:
+0 - SUM     - ACC = ACC + BASE   (Update all alu flags)
+1 - SUB     - ACC = ACC - BASE   (Update all alu flags)
+2 - SLF     - ACC = BASE << 1    (Update negative, zero and positive alu flags)
+3 - SRG     - ACC = BASE >> 1    (Update negative, zero and positive alu flags)
+4 - NOT     - ACC = NOT BASE     (Update negative, zero and positive alu flags)
+5 - AND     - ACC = ACC AND BASE (Update negative, zero and positive alu flags)
+6 - OR      - ACC = ACC OR BASE  (Update negative, zero and positive alu flags)
+7 - XOR     - ACC = ACC XOR BASE (Update negative, zero and positive alu flags)
+8 - JMP     - JMP to RFP
+9 - JNEG    - JMP to RFP if negative flag
+A - JZ      - JMP to RFP if zero flag
+B - JPOS    - JMP to RFP if positive flag
+C - JO      - JMP to RFP if overflow flag
+D - JC      - JMP to RFP if carry flag
+E - JNC     - JMP to RFP if notcarry flag
+F - JINP    - JMP to RFP if input flag
+
+Family E:
+0 - INC SFP
+1 - DEC SFP
+2 - INC P1F
+3 - DEC P1F
+
+4 - INC P2F
+5 - DEC P2F
+6 - INC COUNT (Update negative, zero and positive alu flags)
+7 - DEC COUNT (Update negative, zero and positive alu flags)
+
+8 - SEND    - Move DATA to output_port buffer and send a pulse in pin send_port
+9 - RECEIVE - Move input_port buffer to DATA
+A - MOV1    - Move P1F to RFP
+B - MOV2    - Move P2F to RFP
+
+C - CLA     - Clear ACC
+D - CLB     - Clear BASE
+E - CLF     - Clear ALU Flags
+F - PC      - Copy PC to RFP
+
+Family F:
+X - Halt
+
+WARNING:
+- After an instruction, pc inc +1
