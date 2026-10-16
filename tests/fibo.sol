@@ -1,0 +1,15 @@
+; This is a simple fibonnaci
+INCCOUNT
+BGET COUNT ; Base = 1
+IMML 5
+IMM COUNT ; Count = 5
+
+; LOOP
+; NEW_ACC = ACC + OLD_ACC
+PC ; RFP = PC
+MOVA H1
+SUM
+BGET H1
+DECCOUNT
+JPOS
+HALT

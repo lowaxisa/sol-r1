@@ -1,13 +1,30 @@
 import os
 import curses
+import sys
+from compiler.compile import comp
+from solvm import sol
 
 running = True
 screen_buffer: list[str] = ['> ']
 file = 'Not selected'
-tick = 10
+tick = 0.1
+
+if len(sys.argv) >= 2:
+    path = sys.argv[1]
+
+    if os.path.exists(path) and os.path.isfile(path):
+        if path[len(path) - 4:] == '.hex':
+            file = sys.argv[1]
+
+if len(sys.argv) == 3:
+    curses.initscr()
+    vm = sol(file, tick)
+    if vm.init():
+        vm.run()
+    exit(0)
 
 def cmdhandler(cmd: str, stdscr): # Lembrar q apos isso ja apeenda o '> '
-    global running, screen_buffer, file
+    global running, screen_buffer, file, tick
     cmd_arr = cmd.split()
     string = '' if not len(cmd_arr) else cmd_arr[0]
 
@@ -35,7 +52,16 @@ def cmdhandler(cmd: str, stdscr): # Lembrar q apos isso ja apeenda o '> '
         else:
             screen_buffer.append('load usage: load file-path')
     elif string == 'init':
-        pass
+        if file != 'Not selected':
+            vm = sol(file, tick)
+            if vm.init():
+                vm.run()
+    elif string == 'comp':
+        if len(cmd_arr) == 3:
+            comp('./build', cmd_arr[1], cmd_arr[2], [screen_buffer])
+    elif string == 'tick':
+        if len(cmd_arr) == 2:
+            tick = float(cmd_arr[1])
     elif string == '':
         pass # Pra n falar a mensagem chata ali so de enviar vazio
     else:
@@ -46,7 +72,7 @@ def main(stdscr):
 
     while running:
         stdscr.clear()
-        stdscr.addstr(0, 0, f'Sol R1 launcher | File selected: {file} | Clock freq in ms: {tick}')
+        stdscr.addstr(0, 0, f'Sol R1 launcher | File selected: {file} | Clock freq in seconds: {tick}')
 
         max_y, max_x = stdscr.getmaxyx()
         curr = len(screen_buffer) - 1
