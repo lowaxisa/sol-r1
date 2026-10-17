@@ -41,6 +41,7 @@ REGISTER FLAGS (in byte positions):
 - X is nibble value
 - RX is a register
 - All mnemonics is here
+- 0     : Nop and special ALU instruction
 - 1 to 3: Imediate
 - 4 to 7: Ram
 - 8 to 9: Mov
@@ -49,7 +50,22 @@ REGISTER FLAGS (in byte positions):
 - E     : Input, Misc and hardware aceleration instruction
 Suported mnemonics:
 Family 0:
-NOP
+NOP    - Make nothing
+ADC    - ACC = ACC + BASE + Carry
+SBB    - ACC = ACC + NOT(BASE) + if (carry == 0) carryin_bit0 = 1 else carryin_bit0 = 0
+ROL    - for EX: 10110011 to 01100111
+ROR    - for EX: 10110011 to 11011001
+RCL    - for EX: 10110011 to 0110011[carry]
+RCR    - for EX: 10110011 to [carry]1011001
+NEG    - ACC = NOT(ACC) + 1
+INCACC - ACC = ACC + 1 (Update only negative and zero alu flags)
+DECACC - ACC = ACC - 1 (Update only negative and zero alu flags)
+CMPEQ  - ACC XNOR BASE (if 1: ZERO flag = 1, else ZERO flag = 0)
+CLFN   - Clear flag negative
+CLFZ   - Clear flag zero
+CLFO   - Clear flag overflow
+CLFC   - Clear flag carry
+CLF    - Clear all flags
 
 Family 1:
 IMMH X - Load X in Imediate buffer High

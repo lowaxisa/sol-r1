@@ -43,6 +43,21 @@ def _compsol(f_target: TextIO, f_output: TextIO):
 
 mnemonicos_op = {
     'NOP': '00',
+    'ADC': '01',
+    'SBB': '02',
+    'ROL': '03',
+    'ROR': '04',
+    'RCL': '05',
+    'RCR': '06',
+    'NEG': '07',
+    'INCACC': '08',
+    'DECACC': '09',
+    'CMPEQ': '0A',
+    'CLFN': '0B',
+    'CLFZ': '0C',
+    'CLFO': '0D',
+    'CLFC': '0E',
+    'CLF': '0F',
 
     'IMMH': '1',
     'IMML': '2',

@@ -4,7 +4,7 @@ import curses
 class sol:
     def __init__(self, filepath, tick):
         self.path = filepath
-        self.disk = ['00'] * 256 # small HEX disk
+        self.disk = ['00'] * (256 * 64) # small HEX disk
         self.cpu = {
             'regs': {
                 'ACC':   '00', 'BASE':  '00',
@@ -113,14 +113,14 @@ class sol:
             if op_inst == '7': # XOR
                 hex_value, bin_value = self.op_xor(ACCV, BASEV)
 
-            if op_inst == '8':                           self.pc_jmp() # JMP
-            if op_inst == '9' and alu_flags['negative']: self.pc_jmp() # JNEG
-            if op_inst == 'A' and alu_flags['zero']:     self.pc_jmp() # JZ
-            if op_inst == 'B' and alu_flags['positive']: self.pc_jmp() # JPOS
-            if op_inst == 'C' and alu_flags['overflow']: self.pc_jmp() # JO
-            if op_inst == 'D' and alu_flags['carry']:    self.pc_jmp() # JC
-            if op_inst == 'E' and alu_flags['notzero']:  self.pc_jmp() # JNZ
-            if op_inst == 'F' and self.cpu['input']:     self.pc_jmp() # JINP
+            if op_inst == '8':                             self.pc_jmp() # JMP
+            if op_inst == '9' and alu_flags['negative']:   self.pc_jmp() # JNEG
+            if op_inst == 'A' and alu_flags['zero']:       self.pc_jmp() # JZ
+            if op_inst == 'B' and alu_flags['positive']:   self.pc_jmp() # JPOS
+            if op_inst == 'C' and alu_flags['overflow']:   self.pc_jmp() # JO
+            if op_inst == 'D' and alu_flags['carry']:      self.pc_jmp() # JC
+            if op_inst == 'E' and alu_flags['notzero']:    self.pc_jmp() # JNZ
+            if op_inst == 'F' and self.cpu['input_ready']: self.pc_jmp() # JINP
 
             if op_inst in ('0', '1', '2', '3', '4', '5', '6', '7'):
                 self.cpu['regs']['ACC'] = hex_value
