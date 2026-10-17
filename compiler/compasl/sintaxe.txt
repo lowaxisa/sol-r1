@@ -1,0 +1,24 @@
+Advanced Sol Language Manual
+
+--- Macros:
+Create:
+#MACRO NAME
+    ...
+#MACRO
+
+Usage:
+NAME
+
+--- Macros with args:
+#MACRO IMM8
+IMMH #ARG2
+IMML #ARG3
+IMM #ARG1
+#MACRO
+
+IMM8 ACC 2 F
+
+Output:
+IMMH 2
+IMML F
+IMM ACC

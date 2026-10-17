@@ -1,5 +1,6 @@
 import os
 from compiler.compsol import _compsol
+from compiler.compasl.entry import _compasl
 
 debug = True
 # FUNCAO DE DEBUG
@@ -34,7 +35,7 @@ def comp(path, file, output, buffer: list[list]):
         return
 
     # o check de argv == 1 é pra caso o cara não passe o output name
-    if 'help' in file or multifind(file, '.sol', '.sml') == []:
+    if 'help' in file or multifind(file, '.sol', '.asl') == []:
         listprint('use of this compiler:', buffer)
         listprint('comp file_target.format output_name', buffer)
         return
@@ -45,6 +46,14 @@ def comp(path, file, output, buffer: list[list]):
     if not os.path.exists(target_file):
         listprint(f'error, file {target_file} not exists', buffer)
         return
+
+    if '.asl' in target_file:
+        listprint(f'compiling a .asl file to .sol file...', buffer)
+        output_name = f'./build/{output}.sol'
+
+        with open(target_file, 'r', encoding='utf-8') as f_target, \
+            open(output_name, 'w', encoding='utf-8') as f_output:
+            _compasl(f_target, f_output)
 
     if '.sol' in target_file:
         listprint(f'compiling {target_file} to {output_name}', buffer)
