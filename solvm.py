@@ -245,7 +245,7 @@ class sol:
     def super_dec_and_upd_flag(self, REGH, REGL):
         hex_value, bin_value, carryout, msbcarryin = self.alu_dec(self.cpu['regs'][REGL])
         self.cpu['regs'][REGL] = hex_value
-        if carryout:
+        if not carryout:
             hex_value, bin_value, carryout, msbcarryin = self.alu_dec(self.cpu['regs'][REGH])
             self.cpu['regs'][REGH] = hex_value
 
