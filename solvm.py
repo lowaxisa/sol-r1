@@ -273,10 +273,10 @@ class sol:
     def set_alu_flag(self, idx, on):
         mask = ('0' * idx + '1' + '0' * (7 - idx)) if on else ('1' * idx + '0' + '1' * (7 - idx))
         if on:
-            hexresult, discard1 = self.op_or(self.cpu['regs']['FL'], mask)
+            hexresult, discard1 = self.op_or(self.cpu['regs']['FL'], self.bin_to_hex(mask))
             self.cpu['regs']['FL'] = hexresult
         else:
-            hexresult, discard1 = self.op_and(self.cpu['regs']['FL'], mask)
+            hexresult, discard1 = self.op_and(self.cpu['regs']['FL'], self.bin_to_hex(mask))
             self.cpu['regs']['FL'] = hexresult
 
     def inc_and_upd_flag(self, REG):
