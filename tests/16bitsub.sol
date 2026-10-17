@@ -1,0 +1,34 @@
+; H1 = A low, H2 = A high
+; H3 = B low, H4 = A high
+; 256 - 255 = 0x0100 - 0x00FF
+
+; H1 and H2
+IMML 0
+IMMH 0
+IMM H1
+IMML 1
+IMMH 0
+IMM H2
+
+; H3 and H4
+IMML F
+IMMH F
+IMM H3
+IMML 0
+IMMH 0
+IMM H4
+
+; SUB LOW (P1L = H1 - H3)
+AGET H1
+BGET H3
+SUB
+MOVA P1L
+
+; SUB HIGH WITH SBB (P1H = H2 - H4)
+AGET H2
+BGET H4
+SBB
+MOVA P1H
+
+; END
+HALT

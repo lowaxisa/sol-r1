@@ -4,7 +4,7 @@ import curses
 class sol:
     def __init__(self, filepath, tick):
         self.path = filepath
-        self.disk = ['00'] * (256 * 64) # small HEX disk
+        self.disk = ['00'] * (256 * 256) # 65536 bytes HEX disk
         self.cpu = {
             'regs': {
                 'ACC':   '00', 'BASE':  '00',
@@ -54,8 +54,53 @@ class sol:
         op_inst = op[1]
         self.cpu['last_inst'] = op
 
-        if op_family == '0': # NOP
-            pass
+        if op_family == '0' and op_inst != '0': # opinst = 0 says it NOP so i ignore
+            alu_flags = self.get_alu_flags()
+
+            # Pre def
+            hex_value = None
+            bin_value = None
+            carryout = False
+            msbcarryin = False
+
+            ACCV = self.cpu['regs']['ACC']
+            BASEV = self.cpu['regs']['BASE']
+
+            if op_inst == '1': # ADC
+                hex_value, bin_value, carryout, msbcarryin = self.alu_sum(ACCV, BASEV, alu_flags['carry'])
+            if op_inst == '2': # SBB
+                hex_value, bin_value, carryout, msbcarryin = self.alu_sub(ACCV, BASEV, alu_flags['carry'])
+            if op_inst == '3': # ROL
+                hex_value, bin_value = self.op_leftrotation(ACCV)
+            if op_inst == '4': # ROR
+                hex_value, bin_value = self.op_rightrotation(ACCV)
+            if op_inst == '5': # RCL
+                hex_value, bin_value = self.op_leftrotationcarry(ACCV, alu_flags['carry'])
+            if op_inst == '6': # RCR
+                hex_value, bin_value = self.op_rightrotationcarry(ACCV, alu_flags['carry'])
+            if op_inst == '7': # NEG
+                hex_value, discard1, dircard2, discard3 = self.alu_sub('00', ACCV)
+                self.cpu['regs']['ACC'] = hex_value
+            if op_inst == '8': # INCACC
+                self.inc_and_upd_flag('ACC')
+            if op_inst == '9': # DECACC
+                self.dec_and_upd_flag('ACC')
+            if op_inst == 'A': # CMPEQ
+                hexresult, discard1 = self.op_not(self.op_xor(ACCV, BASEV))
+                if hexresult == 'FF':
+                    self.set_alu_flag(6, True)
+                else:
+                    self.set_alu_flag(6, False)
+            if op_inst == 'B': self.set_alu_flag(7, False) # CLFN
+            if op_inst == 'C': self.set_alu_flag(6, False) # CLFZ
+            if op_inst == 'D': self.set_alu_flag(5, False) # CLFO
+            if op_inst == 'E': self.set_alu_flag(4, False) # CLFC
+            if op_inst == 'F': self.cpu['regs']['FL'] = '00' # CLF
+
+            if op_inst in ('1', '2', '3', '4', '5', '6'):
+                self.cpu['regs']['ACC'] = hex_value
+                self.calc_alu_flags(hex_value, bin_value, carryout, msbcarryin)
+
         if op_family == '1': # IMMH
             self.cpu['imm_buffer'] = op_inst + self.cpu['imm_buffer'][1]
         if op_family == '2': # IMML
@@ -225,6 +270,15 @@ class sol:
 
         return flags
 
+    def set_alu_flag(self, idx, on):
+        mask = ('0' * idx + '1' + '0' * (7 - idx)) if on else ('1' * idx + '0' + '1' * (7 - idx))
+        if on:
+            hexresult, discard1 = self.op_or(self.cpu['regs']['FL'], mask)
+            self.cpu['regs']['FL'] = hexresult
+        else:
+            hexresult, discard1 = self.op_and(self.cpu['regs']['FL'], mask)
+            self.cpu['regs']['FL'] = hexresult
+
     def inc_and_upd_flag(self, REG):
         hex_value, bin_value, carryout, msbcarryin = self.alu_inc(self.cpu['regs'][REG])
         self.calc_alu_flags(hex_value, bin_value, False, False)
@@ -322,6 +376,36 @@ class sol:
         hex_result = self.bin_to_hex(result)
         return hex_result, result
 
+    def op_leftrotation(self, hexnum):
+        binnum = self.hex_to_bin(hexnum)
+        result = binnum[1:] + binnum[:1]
+
+        hex_result = self.bin_to_hex(result)
+        return hex_result, result
+
+    def op_rightrotation(self, hexnum):
+        binnum = self.hex_to_bin(hexnum)
+        result = binnum[7:8] + binnum[:len(binnum) - 1]
+
+        hex_result = self.bin_to_hex(result)
+        return hex_result, result
+
+    def op_leftrotationcarry(self, hexnum, carry):
+        c = '1' if carry else '0'
+        binnum = self.hex_to_bin(hexnum)
+        result = binnum[1:] + c
+
+        hex_result = self.bin_to_hex(result)
+        return hex_result, result
+
+    def op_rightrotationcarry(self, hexnum, carry):
+        c = '1' if carry else '0'
+        binnum = self.hex_to_bin(hexnum)
+        result = c + binnum[:len(binnum) - 1]
+
+        hex_result = self.bin_to_hex(result)
+        return hex_result, result
+
     def op_rightshift(self, hexnum):
         binnum = self.hex_to_bin(hexnum)
         result = '0' + binnum[:len(binnum) - 1]
@@ -387,8 +471,8 @@ class sol:
         
         return self.bin_to_hex(result), result, carry, msbcarryin
 
-    def alu_sub(self, hexnumA, hexnumB):
-        return self.alu_sum(hexnumA, self.op_not(hexnumB)[0], True)
+    def alu_sub(self, hexnumA, hexnumB, carry=True):
+        return self.alu_sum(hexnumA, self.op_not(hexnumB)[0], carry)
 
     def alu_inc(self, hexnumA):
         return self.alu_sum(hexnumA, '01', False)

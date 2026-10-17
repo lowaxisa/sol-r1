@@ -53,7 +53,7 @@ ISA:
 Family 0:
 0 - NOP    - Make nothing
 1 - ADC    - ACC = ACC + BASE + Carry
-2 - SBB    - ACC = ACC + NOT(BASE) + if (carry == 0) carryin_bit0 = 1 else carryin_bit0 = 0
+2 - SBB    - ACC = ACC + NOT(BASE) + Carry
 3 - ROL    - for EX: 10110011 to 01100111
 4 - ROR    - for EX: 10110011 to 11011001
 5 - RCL    - for EX: 10110011 to 0110011[carry]
