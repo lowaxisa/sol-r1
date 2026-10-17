@@ -33,7 +33,7 @@ class sol:
 
     def init(self):
         with open(self.path, 'r', encoding='utf-8') as file:
-            content = file.readline() # So tem uma por padrao
+            content = file.readline().strip() # So tem uma por padrao
             for i in range(len(content)):
                 if i % 2 == 1: continue
 
@@ -86,8 +86,8 @@ class sol:
             if op_inst == '9': # DECACC
                 self.dec_and_upd_flag('ACC')
             if op_inst == 'A': # CMPEQ
-                hexresult, discard1 = self.op_not(self.op_xor(ACCV, BASEV))
-                if hexresult == 'FF':
+                hexresult, discard1 = self.op_not(self.op_xor(ACCV, BASEV)[0]) # [0] in op_xor because is a tuple [hexnum, binnum]
+                if hexresult.upper() == 'FF':
                     self.set_alu_flag(6, True)
                 else:
                     self.set_alu_flag(6, False)
@@ -199,6 +199,8 @@ class sol:
                 self.cpu['input_ready'] = False
             if op_inst == 'E': # CLA
                 self.cpu['regs']['FL'] = '00'
+                self.cpu['regs']['ACC'] = '00'
+                self.cpu['regs']['BASE'] = '00'
             
             if op_inst == 'F': # PC
                 self.cpu['regs']['RA'] = hex(self.cpu['pc_addr'])[2:].zfill(2)

@@ -4,16 +4,50 @@
 # Scan a file and read macros
 
 import copy
+import os
 from typing import TextIO
 
-def resolve_macro(f_target: TextIO, f_output: TextIO):
+def check_import(target_path, buffer):
+    curr_path: str = os.path.dirname(os.path.abspath(target_path))
+    tempbuffer = buffer
+    while True:
+        find_import = False
+
+        for i in range(len(tempbuffer)):
+            line = tempbuffer[i]
+            elements: list = line.split()
+
+            elements_no_comment: list = []
+            for e in elements:
+                if e == ';':    break
+                if e.find(';') != -1: break
+                elements_no_comment.append(e)
+            elements = elements_no_comment
+
+            len_arr = len(elements)
+            if len_arr == 0: continue
+            first_element = elements[0]
+
+            if first_element == '#IMPORT':
+                import_path = os.path.join(curr_path, elements[1])
+                with open(import_path, 'r', encoding='utf-8') as f_import:
+                    tempbuffer = tempbuffer[:i] + check_import(import_path, f_import.readlines()) + tempbuffer[i + 1:]
+                find_import = True
+                break # Its dangeours use array after changes
+
+        if not find_import:
+            return tempbuffer
+
+def resolve_macro(target_path, f_target: TextIO, f_output: TextIO):
     output_buffer = ''
     nomacrodef_buffer: list = []
+    buffer = f_target.readlines() # File buffer
+    buffer = check_import(target_path, copy.deepcopy(buffer))
 
     macros_dic: dict = {} # macro_name: [[line0], [line1], [...]]
 
     macro_context = stack() # MACRO context stack
-    for line in f_target.readlines(): # Load all macros
+    for line in buffer: # Load all macros
         elements: list = line.split()
 
         elements_no_comment: list = []

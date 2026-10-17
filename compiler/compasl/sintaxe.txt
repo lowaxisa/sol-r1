@@ -22,3 +22,27 @@ Output:
 IMMH 2
 IMML F
 IMM ACC
+
+--- Imports:
+for example:
+- mylib.asl
+#MACRO IMM8
+IMMH #ARG2
+IMML #ARG3
+IMM #ARG1
+#MACRO
+
+- myprogram.asl
+#IMPORT mylib.asl
+
+IMM8 ACC F F
+
+Why import make? this:
+- macro.py buffer after import:
+#MACRO IMM8
+IMMH #ARG2
+IMML #ARG3
+IMM #ARG1
+#MACRO
+
+IMM8 ACC F F
