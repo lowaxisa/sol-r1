@@ -4,7 +4,7 @@ The objective of this CPU is a high clock and easy build
 For example the ISA use only 4-bit mux and the connections is pretty simple
 
 # CPU-Specs
-- RISC Single-Cycle FDE
+- RISC FDE
 - 8-bits CPU with paging 8-bits for 16-bits ADDR
 
 # Recommended build

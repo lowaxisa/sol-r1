@@ -16,13 +16,16 @@ class sol:
                 'H2':    '00', 'H3':    '00',
                 'H4':    '00', 'FL':    '00',
             },
-            'alu': {
-                'negative': False, 'zero':  False,
-                'overflow': False, 'carry': False,
-            },
             'pc_addr': 0,
             'pc_page': 0,
             'imm_buffer': '00',
+
+            'input_ready': False, # Input flag
+            'input_data': '00',
+            'output_data': '00',
+            'send_pin': False,
+            'receive_pin': False,
+
             'last_inst': '',
             'halt': False,
         }
@@ -40,6 +43,11 @@ class sol:
 
     def step(self):
         if self.cpu['halt']: return
+
+        # Input pool
+        if self.cpu['receive_pin']:
+            self.cpu['receive_pin'] = False
+            self.cpu['input_ready'] = True
 
         op = self.disk_pc_read()
         op_family = op[0]
@@ -76,61 +84,76 @@ class sol:
         if op_family == 'C': # CGET
             self.cpu['regs']['COUNT'] = self.cpu['regs'][mnemonicos_reg[op_inst]]
 
-        if op_family == 'D': # ALU (OBS: Esse reg3 eh coisa da versao antiga mas fiz essa gambi temporaria pra funcionar)
-            # REG1, REG2, REG3 refs
-            REG1 = 'ACC'
-            REG2 = 'BASE'
-            REG3 = 'ACC'
-            # REG1 and REG2 values
-            REG1V = self.cpu['regs'][REG1]
-            REG2V = self.cpu['regs'][REG2]
+        if op_family == 'D':
+            alu_flags = self.get_alu_flags()
+
+            # Pre def
+            hex_value = None
+            bin_value = None
+            carryout = False
+            msbcarryin = False
+
+            ACCV = self.cpu['regs']['ACC']
+            BASEV = self.cpu['regs']['BASE']
 
             if op_inst == '0': # SUM
-                hex_value, bin_value, carryout, msbcarryin = self.alu_sum(REG1V, REG2V, False)
-                self.cpu['alu'] = self.calc_alu_flags(hex_value, bin_value, carryout, msbcarryin)
-                self.cpu['regs'][REG3] = hex_value
+                hex_value, bin_value, carryout, msbcarryin = self.alu_sum(ACCV, BASEV, False)
             if op_inst == '1': # SUB
-                hex_value, bin_value, carryout, msbcarryin = self.alu_sub(REG1V, REG2V)
-                self.cpu['alu'] = self.calc_alu_flags(hex_value, bin_value, carryout, msbcarryin)
-                self.cpu['regs'][REG3] = hex_value
+                hex_value, bin_value, carryout, msbcarryin = self.alu_sub(ACCV, BASEV)
             if op_inst == '2': # SHL
-                hex_value, bin_value = self.op_leftshift(REG1V)
-                self.cpu['alu'] = self.calc_alu_flags(hex_value, bin_value, False, False)
-                self.cpu['regs'][REG3] = hex_value
+                hex_value, bin_value = self.op_leftshift(ACCV)
             if op_inst == '3': # SHR
-                hex_value, bin_value = self.op_rightshift(REG1V)
-                self.cpu['alu'] = self.calc_alu_flags(hex_value, bin_value, False, False)
-                self.cpu['regs'][REG3] = hex_value
+                hex_value, bin_value = self.op_rightshift(ACCV)
             if op_inst == '4': # NOT
-                hex_value, bin_value = self.op_not(REG1V)
-                self.cpu['alu'] = self.calc_alu_flags(hex_value, bin_value, False, False)
-                self.cpu['regs'][REG3] = hex_value
+                hex_value, bin_value = self.op_not(ACCV)
             if op_inst == '5': # AND
-                hex_value, bin_value = self.op_and(REG1V, REG2V)
-                self.cpu['alu'] = self.calc_alu_flags(hex_value, bin_value, False, False)
-                self.cpu['regs'][REG3] = hex_value
+                hex_value, bin_value = self.op_and(ACCV, BASEV)
             if op_inst == '6': # OR
-                hex_value, bin_value = self.op_or(REG1V, REG2V)
-                self.cpu['alu'] = self.calc_alu_flags(hex_value, bin_value, False, False)
-                self.cpu['regs'][REG3] = hex_value
+                hex_value, bin_value = self.op_or(ACCV, BASEV)
             if op_inst == '7': # XOR
-                hex_value, bin_value = self.op_xor(REG1V, REG2V)
-                self.cpu['alu'] = self.calc_alu_flags(hex_value, bin_value, False, False)
-                self.cpu['regs'][REG3] = hex_value
-            if op_inst == 'B': # JPOS
-                if not self.cpu['alu']['negative'] and not self.cpu['alu']['zero']:
-                    self.cpu['pc_addr'] = int('0x' + self.cpu['regs']['RA'], 16)
-                    self.cpu['pc_page'] = int('0x' + self.cpu['regs']['RP'], 16)
+                hex_value, bin_value = self.op_xor(ACCV, BASEV)
 
-        if op_family == 'E': # Saltos, PC e Comunicação
-            if op_inst == '8': # INCCOUNT
-                hex_value, bin_value, carryout, msbcarryin = self.alu_inc(self.cpu['regs']['COUNT'])
-                self.cpu['alu'] = self.calc_alu_flags(hex_value, bin_value, False, False)
-                self.cpu['regs']['COUNT'] = hex_value
-            if op_inst == '9': # DECCOUNT
-                hex_value, bin_value, carryout, msbcarryin = self.alu_dec(self.cpu['regs']['COUNT'])
-                self.cpu['alu'] = self.calc_alu_flags(hex_value, bin_value, False, False)
-                self.cpu['regs']['COUNT'] = hex_value
+            if op_inst == '8':                           self.pc_jmp() # JMP
+            if op_inst == '9' and alu_flags['negative']: self.pc_jmp() # JNEG
+            if op_inst == 'A' and alu_flags['zero']:     self.pc_jmp() # JZ
+            if op_inst == 'B' and alu_flags['positive']: self.pc_jmp() # JPOS
+            if op_inst == 'C' and alu_flags['overflow']: self.pc_jmp() # JO
+            if op_inst == 'D' and alu_flags['carry']:    self.pc_jmp() # JC
+            if op_inst == 'E' and alu_flags['notzero']:  self.pc_jmp() # JNZ
+            if op_inst == 'F' and self.cpu['input']:     self.pc_jmp() # JINP
+
+            if op_inst in ('0', '1', '2', '3', '4', '5', '6', '7'):
+                self.cpu['regs']['ACC'] = hex_value
+                self.calc_alu_flags(hex_value, bin_value, carryout, msbcarryin)
+
+        if op_family == 'E': # Input, Misc and hardware aceleration instruction
+            if op_inst == '0': self.super_inc_and_upd_flag('RP', 'RA') # INCRFP
+            if op_inst == '1': self.super_dec_and_upd_flag('RP', 'RA') # DECRFP
+            if op_inst == '2': self.super_inc_and_upd_flag('SP', 'SA') # INCSFP
+            if op_inst == '3': self.super_dec_and_upd_flag('SP', 'SA') # DECSFP
+
+            if op_inst == '4': self.super_inc_and_upd_flag('P1H', 'P1L') # INCP1F
+            if op_inst == '5': self.super_dec_and_upd_flag('P1H', 'P1L') # DECP1F
+            if op_inst == '6': self.super_inc_and_upd_flag('P2H', 'P2L') # INCP2F
+            if op_inst == '7': self.super_dec_and_upd_flag('P2H', 'P2L') # DECP2F
+
+            if op_inst == '8': self.inc_and_upd_flag('COUNT') # INCCOUNT
+            if op_inst == '9': self.dec_and_upd_flag('COUNT') # DECCOUNT
+
+            if op_inst == 'A': # MOV1
+                self.cpu['regs']['RA'] = self.cpu['regs']['P1L']
+                self.cpu['regs']['RP'] = self.cpu['regs']['P1H']
+            if op_inst == 'B': # MOV2
+                self.cpu['regs']['RA'] = self.cpu['regs']['P2L']
+                self.cpu['regs']['RP'] = self.cpu['regs']['P2H']
+            if op_inst == 'C':
+                self.cpu['output_data'] = self.cpu['regs']['ACC']
+                self.cpu['send_pin'] = True
+            if op_inst == 'D':
+                self.cpu['regs']['ACC'] = self.cpu['input_data']
+                self.cpu['input_ready'] = False
+            if op_inst == 'E': # CLA
+                self.cpu['regs']['FL'] = '00'
             
             if op_inst == 'F': # PC
                 self.cpu['regs']['RA'] = hex(self.cpu['pc_addr'])[2:].zfill(2)
@@ -168,27 +191,73 @@ class sol:
         input()
 
     def calc_alu_flags(self, hexnum, binnum, msbcarryout, msbcarryin):
-        alu = {
-            'negative': False, 'zero':  False,
-            'overflow': False, 'carry': False,
+        fl = self.cpu['regs']['FL'] # FLAGS register
+        binfl = list(self.hex_to_bin(fl))
+
+        if binnum[0] == '1':          binfl[7] = '1' # Negative
+        if hexnum == '00':            binfl[6] = '1' # Zero
+        if msbcarryout != msbcarryin: binfl[5] = '1' # Overflow
+        if msbcarryout:               binfl[4] = '1' # Carry
+
+        binfl = ''.join(binfl)
+        newfl = self.bin_to_hex(binfl)
+        self.cpu['regs']['FL'] = newfl
+
+    def get_alu_flags(self):
+        fl = self.cpu['regs']['FL'] # FLAGS register
+        binfl = self.hex_to_bin(fl)
+
+        negative = True if binfl[7] == '1' else False
+        zero     = True if binfl[6] == '1' else False
+        overflow = True if binfl[5] == '1' else False
+        carry    = True if binfl[4] == '1' else False
+        positive = not negative and not zero
+        notzero  = not zero
+
+        flags = {
+            'negative': negative,
+            'zero':     zero,
+            'positive': positive,
+            'overflow': overflow,
+            'notzero':  notzero,
+            'carry':    carry,
         }
 
-        if binnum[0] == '1':
-            alu['negative'] = True
-        if hexnum == '00':
-            alu['zero'] = True
-        if msbcarryout:
-            alu['carry'] = True
-        if msbcarryout != msbcarryin:
-            alu['overflow'] = True
+        return flags
 
-        return alu
+    def inc_and_upd_flag(self, REG):
+        hex_value, bin_value, carryout, msbcarryin = self.alu_inc(self.cpu['regs'][REG])
+        self.calc_alu_flags(hex_value, bin_value, False, False)
+        self.cpu['regs'][REG] = hex_value
+
+    def dec_and_upd_flag(self, REG):
+        hex_value, bin_value, carryout, msbcarryin = self.alu_dec(self.cpu['regs'][REG])
+        self.calc_alu_flags(hex_value, bin_value, False, False)
+        self.cpu['regs'][REG] = hex_value
+
+    def super_inc_and_upd_flag(self, REGH, REGL):
+        hex_value, bin_value, carryout, msbcarryin = self.alu_inc(self.cpu['regs'][REGL])
+        self.cpu['regs'][REGL] = hex_value
+        if carryout:
+            hex_value, bin_value, carryout, msbcarryin = self.alu_inc(self.cpu['regs'][REGH])
+            self.cpu['regs'][REGH] = hex_value
+
+    def super_dec_and_upd_flag(self, REGH, REGL):
+        hex_value, bin_value, carryout, msbcarryin = self.alu_dec(self.cpu['regs'][REGL])
+        self.cpu['regs'][REGL] = hex_value
+        if carryout:
+            hex_value, bin_value, carryout, msbcarryin = self.alu_dec(self.cpu['regs'][REGH])
+            self.cpu['regs'][REGH] = hex_value
 
     def pc_inc(self):
         next_addr = (self.cpu['pc_addr'] + 1) % 256
         if next_addr == 0:
             self.cpu['pc_page'] = (self.cpu['pc_page'] + 1) % 256
         self.cpu['pc_addr'] = next_addr
+
+    def pc_jmp(self):
+        self.cpu['pc_addr'] = int('0x' + self.cpu['regs']['RA'], 16)
+        self.cpu['pc_page'] = int('0x' + self.cpu['regs']['RP'], 16)
 
     def disk_pc_read(self):
         return self.disk[self.cpu['pc_addr'] + (self.cpu['pc_page'] * 256)]
@@ -267,15 +336,18 @@ class sol:
         carry = False
         msbcarryin = False
 
-        for i in range(8):
-            k = 7 - i
+        numlen = len(binumA)
+        maxidx = numlen - 1
+
+        for i in range(numlen):
+            k = maxidx - i
             a = binumA[k]
             b = binumB[k]
 
             if k == 0:
                 msbcarryin = carry
             
-            if carryin and k == 7:
+            if carryin and k == maxidx:
                 carry = True
 
             xor_ab = False
@@ -308,8 +380,8 @@ class sol:
                     result += '0'
 
         temp = ''
-        for i in range(8): # Desinverte o resultado final
-            k = 7 - i
+        for i in range(numlen): # Desinverte o resultado final
+            k = maxidx - i
             temp += result[k]
         result = temp
         

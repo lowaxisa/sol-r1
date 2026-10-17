@@ -23,7 +23,7 @@ CPU SPECS:
 - op-decoder   emit the signal CLK in components
 
 SIGNALS PIN:
-- receive_port (external dispositive send a pulse here to say re send info in input buffer)
-- send_port (cpu sends a pulse to say the program put data in output buffer)
+- receive_pin (external dispositive send a pulse here to say re send info in input buffer)
+- send_pin (cpu sends a pulse to say the program put data in output buffer)
 
 ISA, REGS and ALU FLAGS: See file isa.txt

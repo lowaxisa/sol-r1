@@ -7,7 +7,7 @@ ALU CALCULATED FLAGS:
 - positive: if not negative and not zero
 - notzero: if not zero
 INPUT FLAGS:
-- input: ON if cpu receive from dispositive a pulse in pin receive_port
+- input_ready: ON if cpu receive from dispositive a pulse in pin receive_pin
 
 REGISTERS: - HEX Code | Name | Mnemonic
 0 Accumulator    (ACC)
@@ -95,7 +95,7 @@ JPOS    - JMP to RFP if positive flag
 JO      - JMP to RFP if overflow flag
 JC      - JMP to RFP if carry flag
 JNZ     - JMP to RFP if notzero flag
-JINP    - JMP to RFP if input flag
+JINP    - JMP to RFP if input_ready flag
 
 Family E:
 INCRFP
@@ -110,8 +110,8 @@ INCCOUNT (Update only negative and zero alu flags)
 DECCOUNT (Update only negative and zero alu flags)
 MOV1    - Move P1F to RFP
 MOV2    - Move P2F to RFP
-SEND    - Move ACC to output_port buffer and send a pulse in pin send_port
-RECEIVE - Move input_port buffer to ACC (and set off flag input)
+SEND    - Move ACC to output_data buffer and send a pulse in pin send_pin
+RECEIVE - Move input_data buffer to ACC (and set off flag input_ready)
 CLA     - Clear ALU (base, acc and flags)
 PC      - Copy PC to RFP
 
