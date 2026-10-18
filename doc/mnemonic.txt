@@ -51,13 +51,13 @@ REGISTER FLAGS (in byte positions):
 Suported mnemonics:
 Family 0:
 NOP    - Make nothing
-ADC    - ACC = ACC + BASE + Carry
-SBB    - ACC = ACC + NOT(BASE) + Carry
-ROL    - for EX: 10110011 to 01100111
-ROR    - for EX: 10110011 to 11011001
-RCL    - for EX: 10110011 to 0110011[carry]
-RCR    - for EX: 10110011 to [carry]1011001
-NEG    - ACC = NOT(ACC) + 1
+ADC    - ACC = ACC + BASE + Carry      (Update all alu flags)
+SBB    - ACC = ACC + NOT(BASE) + Carry (Update all alu flags)
+ROL    - for EX: 10110011 to 01100111 (Update only negative and zero alu flags)
+ROR    - for EX: 10110011 to 11011001 (Update only negative and zero alu flags)
+RCL    - for EX: 10110011 to 0110011[carry] (Update only negative, carry and zero alu flags)
+RCR    - for EX: 10110011 to [carry]1011001 (Update only negative, carry and zero alu flags)
+NEG    - ACC = NOT(ACC) + 1 (Update all alu flags)
 INCACC - ACC = ACC + 1 (Update only negative and zero alu flags)
 DECACC - ACC = ACC - 1 (Update only negative and zero alu flags)
 CMPEQ  - ACC XNOR BASE (if 1: ZERO flag = 1, else ZERO flag = 0)

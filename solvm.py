@@ -33,7 +33,7 @@ class sol:
 
     def init(self):
         with open(self.path, 'r', encoding='utf-8') as file:
-            content = file.readline().strip() # So tem uma por padrao
+            content = file.readline().strip().upper() # So tem uma por padrao
             for i in range(len(content)):
                 if i % 2 == 1: continue
 
@@ -62,6 +62,7 @@ class sol:
             bin_value = None
             carryout = False
             msbcarryin = False
+            carryexit = False
 
             ACCV = self.cpu['regs']['ACC']
             BASEV = self.cpu['regs']['BASE']
@@ -75,11 +76,11 @@ class sol:
             if op_inst == '4': # ROR
                 hex_value, bin_value = self.op_rightrotation(ACCV)
             if op_inst == '5': # RCL
-                hex_value, bin_value = self.op_leftrotationcarry(ACCV, alu_flags['carry'])
+                hex_value, bin_value, carryexit = self.op_leftrotationcarry(ACCV, alu_flags['carry'])
             if op_inst == '6': # RCR
-                hex_value, bin_value = self.op_rightrotationcarry(ACCV, alu_flags['carry'])
+                hex_value, bin_value, carryexit = self.op_rightrotationcarry(ACCV, alu_flags['carry'])
             if op_inst == '7': # NEG
-                hex_value, discard1, dircard2, discard3 = self.alu_sub('00', ACCV)
+                hex_value, bin_value, carryout, msbcarryin = self.alu_sub('00', ACCV)
                 self.cpu['regs']['ACC'] = hex_value
             if op_inst == '8': # INCACC
                 self.inc_and_upd_flag('ACC')
@@ -97,9 +98,16 @@ class sol:
             if op_inst == 'E': self.set_alu_flag(4, False) # CLFC
             if op_inst == 'F': self.cpu['regs']['FL'] = '00' # CLF
 
-            if op_inst in ('1', '2', '3', '4', '5', '6'):
+            if op_inst in ('1', '2', '7'):
                 self.cpu['regs']['ACC'] = hex_value
                 self.calc_alu_flags(hex_value, bin_value, carryout, msbcarryin)
+            if op_inst in ('3', '4'):
+                self.cpu['regs']['ACC'] = hex_value
+                self.calc_alu_flags(hex_value, bin_value, carryout, msbcarryin, partial=True)
+            if op_inst in ('5', '6'):
+                self.cpu['regs']['ACC'] = hex_value
+                self.calc_alu_flags(hex_value, bin_value, carryout, msbcarryin, partial=True)
+                self.set_alu_flag(4, carryexit)
 
         if op_family == '1': # IMMH
             self.cpu['imm_buffer'] = op_inst + self.cpu['imm_buffer'][1]
@@ -167,9 +175,12 @@ class sol:
             if op_inst == 'E' and alu_flags['notzero']:    self.pc_jmp() # JNZ
             if op_inst == 'F' and self.cpu['input_ready']: self.pc_jmp() # JINP
 
-            if op_inst in ('0', '1', '2', '3', '4', '5', '6', '7'):
+            if op_inst in ('0', '1'):
                 self.cpu['regs']['ACC'] = hex_value
                 self.calc_alu_flags(hex_value, bin_value, carryout, msbcarryin)
+            if op_inst in ('2', '3', '4', '5', '6', '7'):
+                self.cpu['regs']['ACC'] = hex_value
+                self.calc_alu_flags(hex_value, bin_value, carryout, msbcarryin, partial=True)
 
         if op_family == 'E': # Input, Misc and hardware aceleration instruction
             if op_inst == '0': self.super_inc_and_upd_flag('RP', 'RA') # INCRFP
@@ -237,14 +248,16 @@ class sol:
         print('\nCPU halted, press enter to continue')
         input()
 
-    def calc_alu_flags(self, hexnum, binnum, msbcarryout, msbcarryin):
+    def calc_alu_flags(self, hexnum, binnum, msbcarryout, msbcarryin, partial=False): # Partial update only zero and negative flag
         fl = self.cpu['regs']['FL'] # FLAGS register
         binfl = list(self.hex_to_bin(fl))
 
-        if binnum[0] == '1':          binfl[7] = '1' # Negative
-        if hexnum == '00':            binfl[6] = '1' # Zero
-        if msbcarryout != msbcarryin: binfl[5] = '1' # Overflow
-        if msbcarryout:               binfl[4] = '1' # Carry
+        
+        binfl[7] = '1' if binnum[0] == '1' else '0' # Negative
+        binfl[6] = '1' if hexnum == '00' else '0'   # Zero
+        if not partial:
+            binfl[5] = '1'if msbcarryout != msbcarryin else '0' # Overflow
+            binfl[4] = '1'if msbcarryout else '0'               # Carry
 
         binfl = ''.join(binfl)
         newfl = self.bin_to_hex(binfl)
@@ -283,12 +296,12 @@ class sol:
 
     def inc_and_upd_flag(self, REG):
         hex_value, bin_value, carryout, msbcarryin = self.alu_inc(self.cpu['regs'][REG])
-        self.calc_alu_flags(hex_value, bin_value, False, False)
+        self.calc_alu_flags(hex_value, bin_value, False, False, partial=True)
         self.cpu['regs'][REG] = hex_value
 
     def dec_and_upd_flag(self, REG):
         hex_value, bin_value, carryout, msbcarryin = self.alu_dec(self.cpu['regs'][REG])
-        self.calc_alu_flags(hex_value, bin_value, False, False)
+        self.calc_alu_flags(hex_value, bin_value, False, False, partial=True)
         self.cpu['regs'][REG] = hex_value
 
     def super_inc_and_upd_flag(self, REGH, REGL):
@@ -396,17 +409,21 @@ class sol:
         c = '1' if carry else '0'
         binnum = self.hex_to_bin(hexnum)
         result = binnum[1:] + c
+        carryexit = binnum[0:1] # first byte for example *x* [x, x, x, x, x, x, x, carry]
+        carryexit = True if carryexit == '1' else False
 
         hex_result = self.bin_to_hex(result)
-        return hex_result, result
+        return hex_result, result, carryexit
 
     def op_rightrotationcarry(self, hexnum, carry):
         c = '1' if carry else '0'
         binnum = self.hex_to_bin(hexnum)
         result = c + binnum[:len(binnum) - 1]
+        carryexit = binnum[len(binnum) - 1:] # last byte for example [carry, x, x, x, x, x, x, x] *x*
+        carryexit = True if carryexit == '1' else False
 
         hex_result = self.bin_to_hex(result)
-        return hex_result, result
+        return hex_result, result, carryexit
 
     def op_rightshift(self, hexnum):
         binnum = self.hex_to_bin(hexnum)
@@ -486,7 +503,7 @@ class sol:
         return bin(int('0x' + hexnum, 16))[2:].zfill(8)
 
     def bin_to_hex(self, binnum): # Usa o sem 0b e retorna o sem 0x
-        return hex(int('0b' + binnum, 2))[2:].zfill(2)
+        return hex(int('0b' + binnum, 2))[2:].zfill(2).upper()
 
 mnemonicos_reg = {
     '0': 'ACC',
