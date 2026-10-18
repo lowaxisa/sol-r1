@@ -97,3 +97,17 @@ OR
 body
 #LOCK
 this message dont have Lock
+
+--- Expressions:
+CONCAT: sintaxe ( CONCAT STR_A STR_B )
+for ex: ( CONCAT A B ) - AB
+
+AT: sintaxe ( AT STR INDEX )
+for ex: ( AT HELLO 1 ) - E
+
+FILTER: sintaxe ( FILTER STR LIST DEFAULT )
+for ex: ( FILTER AX AX BX CX ERR ) - AX
+for ex: ( FILTER DX AX BX CX ERR ) - ERR
+
+suport aninhed expressions example:
+( CONCAT A ( FILTER ( AT WATER 1 ) A B C ERR ) ) - AA
