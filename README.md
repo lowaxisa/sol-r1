@@ -1,4 +1,6 @@
-# Sol-R1
+<h1>
+    <img src='logo.png' align='right' width='49'> Sol-R1
+</h1>
 
 The objective of this CPU is a high clock and easy build
 For example the ISA use only 4-bit mux and the connections is pretty simple
