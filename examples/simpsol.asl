@@ -1,3 +1,4 @@
+#LOCK SIMPSOL_LIB
 ; This is a basic asl lib
 
 ; Imediate helpers

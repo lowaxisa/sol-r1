@@ -1,0 +1,3 @@
+#IMPORT thisbeincluded.asl
+
+FILE RANDOMINCLUDE HAS INCLUDED

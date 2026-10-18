@@ -46,3 +46,54 @@ IMM #ARG1
 #MACRO
 
 IMM8 ACC F F
+
+--- Lock:
+Lock dont permit a file has a dupe after import for example
+
+WITHOUT LOCK:
+1.asl
+#IMPORT 2.asl
+#IMPORT 3.asl
+I am 1
+
+2.asl
+#IMPORT 3.asl
+I am 2
+
+3.asl
+I am 3
+
+RESULT:
+I am 3
+I am 2
+I am 3
+I am 1
+
+WITH LOCK
+1.asl
+#IMPORT 2.asl
+#IMPORT 3.asl
+I am 1
+
+2.asl
+#IMPORT 3.asl
+I am 2
+
+3.asl
+#LOCK LOCK_3
+I am 3
+
+RESULT:
+I am 3
+I am 2
+I am 1
+
+LOCK sintaxe:
+#LOCK NAME
+file body
+
+OR
+#LOCK NAME
+body
+#LOCK
+this message dont have Lock
