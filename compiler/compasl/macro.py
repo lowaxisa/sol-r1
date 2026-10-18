@@ -105,12 +105,48 @@ def check_import(target_path, buffer, locks: list):
         if not find_import:
             return tempbuffer
 
-def resolve_macro(target_path, f_target: TextIO, f_output: TextIO):
+def resolve_macro(target_path, f_target: TextIO, macros_dic_ptr: list[dict]):
+    macros_expanded = False
+
     output_buffer = ''
     nomacrodef_buffer: list = []
+    defines_found = {} # #DEFINE NAME VALUE
     buffer = f_target.readlines() # File buffer
     buffer = check_import(target_path, copy.deepcopy(buffer), [])
-    macros_dic, nomacrodef_buffer = search_macros(buffer) # macros_dic: {macro_name: [[line0], [line1], [...]]}
+    macros_dic_find, nomacrodef_buffer = search_macros(buffer) # macros_dic: {macro_name: [[line0], [line1], [...]]}
+    macros_dic_ptr[0] = {**macros_dic_ptr[0], **macros_dic_find}
+    macros_dic = macros_dic_ptr[0]
+
+    if macros_dic_find != {}:
+        macros_expanded = True
+
+    for i in range(len(nomacrodef_buffer)): # read defines
+        line = nomacrodef_buffer[i]
+
+        if line[0] == '#DEFINE':
+            define_value = ' '.join(line[2:])
+            defines_found[line[1]] = define_value
+            nomacrodef_buffer[i] = None # I clean this in other loop
+
+    while True:
+        re_start = False
+
+        for i in range(len(nomacrodef_buffer)):
+            if nomacrodef_buffer[i] == None:
+                nomacrodef_buffer = nomacrodef_buffer[:i] + nomacrodef_buffer[i + 1:]
+                re_start = True
+                break
+
+        if not re_start: break
+
+    for i in range(len(nomacrodef_buffer)): # expand defines
+        line = nomacrodef_buffer[i]
+
+        for k in range(len(line)):
+            string = nomacrodef_buffer[i][k]
+
+            if string in defines_found:
+                nomacrodef_buffer[i][k] = defines_found[string]
 
     while True: # Expand all macros
         expand_target = None
@@ -125,10 +161,29 @@ def resolve_macro(target_path, f_target: TextIO, f_output: TextIO):
                 encountred_macro = line[0]
 
                 argc = 1
-                for arg in line:
+                deep = 0
+                arg_buffer = []
+                for arg in line: # This turn expressions to args ex '(', '...', ')' to '(...)'
                     if arg == line[0]: continue
-                    macro_args['#ARG' + str(argc)] = arg
-                    argc += 1
+
+                    if arg == '(':
+                        deep += 1
+                        arg_buffer.append(arg)
+                    elif arg == ')':
+                        if deep == 1:
+                            deep = 0
+                            arg_buffer.append(arg)
+                            macro_args['#ARG' + str(argc)] = ' '.join(arg_buffer)
+                            arg_buffer.clear()
+                            argc += 1
+                        else:
+                            deep -= 1
+                            arg_buffer.append(arg)
+                    elif deep:
+                        arg_buffer.append(arg)
+                    else:
+                        macro_args['#ARG' + str(argc)] = arg
+                        argc += 1
 
                 break
 
@@ -139,6 +194,7 @@ def resolve_macro(target_path, f_target: TextIO, f_output: TextIO):
             macrosource: list[list[str]] = copy.deepcopy(macros_dic[encountred_macro])
             for i in range(len(macrosource)):
                 arr = macrosource[i]
+
                 for k in range(len(arr)):
                     line = arr[k]
 
@@ -153,7 +209,11 @@ def resolve_macro(target_path, f_target: TextIO, f_output: TextIO):
         line = ' '.join(elements_arr)
         output_buffer += line + '\n'
 
-    f_output.write(output_buffer)
+    f_target.seek(0)
+    f_target.truncate()
+    f_target.flush()
+    f_target.write(output_buffer)
+    return macros_expanded
 
 class stack:
     def __init__(self):

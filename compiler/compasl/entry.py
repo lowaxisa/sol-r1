@@ -5,7 +5,7 @@
 # For more see examples or sintaxe.txt
 
 # Resolve sequence:
-# Macros -> Labels -> Expressions
+# (Macros and expressions) -> Labels
 
 from typing import TextIO
 
@@ -14,12 +14,26 @@ from compiler.compasl.macro import resolve_macro
 from compiler.compasl.expr import resolve_expr
 
 def _compasl(target_path, f_target: TextIO, f_output: TextIO):
-    f_output.truncate() # Clear output
-    f_output.flush()
-
-    # This is just a repass
-    resolve_macro(target_path, f_target, f_output)
-    # label.py not implemented now...
     f_output.flush()
     f_output.seek(0)
-    resolve_expr(f_output)
+    f_output.truncate() # Clear output
+    f_output.flush()
+    f_output.writelines(f_target.readlines())
+    f_output.flush()
+    f_output.seek(0)
+    dic_ptr = [{}]
+
+    while True:
+        macro_processed = resolve_macro(target_path, f_output, dic_ptr)
+        f_output.flush()
+        f_output.seek(0)
+        expr_processed = resolve_expr(f_output)
+        f_output.flush()
+        f_output.seek(0)
+
+        if macro_processed or expr_processed:
+            continue
+        break
+
+    f_output.flush()
+    f_output.seek(0)

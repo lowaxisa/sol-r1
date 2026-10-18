@@ -98,6 +98,19 @@ body
 #LOCK
 this message dont have Lock
 
+--- Defines:
+is to define global values ex
+#DEFINE TRY_SEND 04
+TRY_SEND
+
+Output:
+04
+
+IMM8 ACC TRY_SEND
+
+output:
+IMM8 ACC 04
+
 --- Expressions:
 CONCAT: sintaxe ( CONCAT STR_A STR_B )
 for ex: ( CONCAT A B ) - AB
@@ -108,6 +121,18 @@ for ex: ( AT HELLO 1 ) - E
 FILTER: sintaxe ( FILTER STR LIST DEFAULT )
 for ex: ( FILTER AX AX BX CX ERR ) - AX
 for ex: ( FILTER DX AX BX CX ERR ) - ERR
+
+ESPACE: sintaxe ( ESPACE )
+for ex: ( CONCAT A ( ESPACE ) ) - 'A '
+
+ENDLINE: sintaxe ( ENDLINE )
+for ex: ( CONCAT A ( ENDLINE ) ) - 'A\n'
+
+UPPER: sintaxe ( UPPER STR )
+for ex: ( UPPER hello ) - HELLO
+
+LOWER: sintaxe ( LOWER STR )
+for ex: ( LOWER HELLO ) - hello
 
 suport aninhed expressions example:
 ( CONCAT A ( FILTER ( AT WATER 1 ) A B C ERR ) ) - AA

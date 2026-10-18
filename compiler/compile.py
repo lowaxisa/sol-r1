@@ -52,7 +52,7 @@ def comp(path, file, output, buffer: list[list]):
         output_name = f'./build/{output}.sol'
 
         with open(target_file, 'r', encoding='utf-8') as f_target, \
-            open(output_name, 'r+', encoding='utf-8') as f_output:
+            open(output_name, 'w+', encoding='utf-8') as f_output:
             _compasl(target_file, f_target, f_output)
 
     if '.sol' in target_file:
