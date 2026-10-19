@@ -11,7 +11,8 @@ def search_macros(buffer):
     macros_dic: dict = {} # macro_name: [[line0], [line1], [...]]
     no_macro_buffer = [] # code buffer, but without macros define
 
-    macro_context = stack() # MACRO context stack
+    macro_context_deep = 0 # MACRO context
+    curr_macro = ''
     for line in buffer: # Load all macros
         elements: list = line.split()
 
@@ -26,18 +27,24 @@ def search_macros(buffer):
         if len_arr == 0: continue
         first_element = elements[0]
 
-        if not macro_context.is_empty():
-            curr_macro = macro_context.top()
-            # PUSH line into macro source
-            if len_arr == 1 and first_element == '#MACRO':
-                macro_context.pop()
+        if macro_context_deep:
+            if len_arr == 1 and first_element == '#MACRO' and macro_context_deep == 1:
+                curr_macro = ''
+                macro_context_deep -= 1
+            elif len_arr == 1 and first_element == '#MACRO' and macro_context_deep > 1:
+                macro_context_deep -= 1
+                macros_dic[curr_macro].append(elements)
+            elif len_arr == 2 and first_element == '#MACRO': # New macro in a macro
+                macro_context_deep += 1
+                macros_dic[curr_macro].append(elements)
             else:
                 macros_dic[curr_macro].append(elements)
             continue
 
         if first_element == '#MACRO': # #MACRO NAME
             macros_dic[elements[1]] = []
-            macro_context.push(elements[1])
+            curr_macro = elements[1]
+            macro_context_deep += 1
             continue
         no_macro_buffer.append(elements)
     return macros_dic, no_macro_buffer
@@ -105,12 +112,12 @@ def check_import(target_path, buffer, locks: list):
         if not find_import:
             return tempbuffer
 
-def resolve_macro(target_path, f_target: TextIO, macros_dic_ptr: list[dict]):
+def resolve_macro(target_path, f_target: TextIO, macros_dic_ptr: list[dict], defines_dic_ptr: list[dict]):
     macros_expanded = False
 
     output_buffer = ''
     nomacrodef_buffer: list = []
-    defines_found = {} # #DEFINE NAME VALUE
+    defines_found = defines_dic_ptr[0] # #DEFINE NAME VALUE
     buffer = f_target.readlines() # File buffer
     buffer = check_import(target_path, copy.deepcopy(buffer), [])
     macros_dic_find, nomacrodef_buffer = search_macros(buffer) # macros_dic: {macro_name: [[line0], [line1], [...]]}
@@ -125,10 +132,10 @@ def resolve_macro(target_path, f_target: TextIO, macros_dic_ptr: list[dict]):
 
         if line[0] == '#DEFINE':
             define_value = ' '.join(line[2:])
-            defines_found[line[1]] = define_value
+            defines_dic_ptr[0][line[1]] = define_value
             nomacrodef_buffer[i] = None # I clean this in other loop
 
-    while True:
+    while True: # Clean none in nomacrodef_buffer
         re_start = False
 
         for i in range(len(nomacrodef_buffer)):
@@ -138,15 +145,6 @@ def resolve_macro(target_path, f_target: TextIO, macros_dic_ptr: list[dict]):
                 break
 
         if not re_start: break
-
-    for i in range(len(nomacrodef_buffer)): # expand defines
-        line = nomacrodef_buffer[i]
-
-        for k in range(len(line)):
-            string = nomacrodef_buffer[i][k]
-
-            if string in defines_found:
-                nomacrodef_buffer[i][k] = defines_found[string]
 
     while True: # Expand all macros
         expand_target = None
@@ -205,6 +203,17 @@ def resolve_macro(target_path, f_target: TextIO, macros_dic_ptr: list[dict]):
         else:
             break
 
+    for i in range(len(nomacrodef_buffer)): # expand defines in the end
+        line = nomacrodef_buffer[i]
+
+        for k in range(len(line)):
+            string = nomacrodef_buffer[i][k]
+
+            if string in defines_found:
+                nomacrodef_buffer[i][k] = defines_found[string]
+                macros_expanded = True # This is important
+
+    # File write
     for elements_arr in nomacrodef_buffer:
         line = ' '.join(elements_arr)
         output_buffer += line + '\n'
@@ -214,19 +223,3 @@ def resolve_macro(target_path, f_target: TextIO, macros_dic_ptr: list[dict]):
     f_target.flush()
     f_target.write(output_buffer)
     return macros_expanded
-
-class stack:
-    def __init__(self):
-        self.src: list = []
-
-    def is_empty(self):
-        return not len(self.src)
-
-    def top(self):
-        return self.src[-1]
-
-    def push(self, element):
-        self.src.append(element)
-
-    def pop(self):
-        return self.src.pop()

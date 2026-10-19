@@ -22,9 +22,10 @@ def _compasl(target_path, f_target: TextIO, f_output: TextIO):
     f_output.flush()
     f_output.seek(0)
     dic_ptr = [{}]
+    def_ptr = [{}]
 
     while True:
-        macro_processed = resolve_macro(target_path, f_output, dic_ptr)
+        macro_processed = resolve_macro(target_path, f_output, dic_ptr, def_ptr)
         f_output.flush()
         f_output.seek(0)
         expr_processed = resolve_expr(f_output)
