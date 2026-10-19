@@ -1,11 +1,21 @@
 #LOCK SIMPSOL_LIB
-; This is a basic asl lib
+; This is a basic asl lib and is only macros
 
 ; Imediate helpers
 #MACRO IMM8 ; REG, VALUE_HIGH, VALUE_LOW or just REG, VALUE
     IMMH ( AT ( CONCAT #ARG2 #ARG3 ) 0 )
     IMML ( AT ( CONCAT #ARG2 #ARG3 ) 1 )
     IMM #ARG1
+#MACRO
+
+#MACRO IMM16 ; REGHIGH REGLOW VALUE (VALUE is XXXX)
+    IMM8 #ARG1 ( CONCAT ( AT #ARG3 0 ) ( AT #ARG3 1 ) )
+    IMM8 #ARG2 ( CONCAT ( AT #ARG3 2 ) ( AT #ARG3 3 ) )
+#MACRO
+
+#MACRO IMMP ; FULL REG, VALUE (SUPORT SFP RFP P1F P2F) (IMMP is IMEDIATE POINTER)
+    IMM8 ( IFEQ #ARG1 SFP SP ( IFEQ #ARG1 RFP RP ( IFEQ #ARG1 P1F P1H P2H ) ) ) ( CONCAT ( AT #ARG2 0 ) ( AT #ARG2 1 ) ) ; High part is SP RP P1H P2H
+    IMM8 ( IFEQ #ARG1 SFP SA ( IFEQ #ARG1 RFP RA ( IFEQ #ARG1 P1F P1L P2L ) ) ) ( CONCAT ( AT #ARG2 2 ) ( AT #ARG2 3 ) ) ; Low part is SA RA P1L P2L
 #MACRO
 
 ; Jump helpers
@@ -18,4 +28,74 @@
     IMM RP
     DECRFP ; Fix jump aling
     #ARG1
+#MACRO
+
+; Ram helpers
+#MACRO PUSH ; REG
+    STORESFP #ARG1
+    DECSFP
+#MACRO
+
+#MACRO POP ; REG
+    INCSFP
+    LOADSFP #ARG1
+#MACRO
+
+#MACRO CALL ; LABEL - Push RP, RA, jmp to LABEL
+    PUSH RA
+    PUSH RP
+    JMPTO #ARG1
+#MACRO
+
+#MACRO RET ; Pop RA, RP and JMP
+    POP RA
+    POP RP
+    JMP
+#MACRO
+
+#MACRO PUSHA ; PUSH all regs
+    PUSH ACC
+    PUSH BASE
+    PUSH COUNT
+    PUSH RP
+    PUSH RA
+    PUSH SP
+    PUSH SA
+    PUSH P1H
+    PUSH P1L
+    PUSH P2H
+    PUSH P2L
+    PUSH H1
+    PUSH H2
+    PUSH H3
+    PUSH H4
+    PUSH FL
+#MACRO
+
+#MACRO POPA ; Pop all regs
+    POP FL
+    POP H4
+    POP H3
+    POP H2
+    POP H1
+    POP P2L
+    POP P2H
+    POP P1L
+    POP P1H
+    POP SA
+    POP SP
+    POP RA
+    POP RP
+    POP COUNT
+    POP BASE
+    POP ACC
+#MACRO
+
+#MACRO RAMAT ; REG VALUE - Load in REG RAM[VALUE]
+    PUSH P1H
+    PUSH P1L
+    IMMP P1F #ARG2
+    LOADP1 #ARG1
+    POP P1L
+    POP P1H
 #MACRO

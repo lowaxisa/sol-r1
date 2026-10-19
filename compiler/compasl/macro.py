@@ -112,12 +112,12 @@ def check_import(target_path, buffer, locks: list):
         if not find_import:
             return tempbuffer
 
-def resolve_macro(target_path, f_target: TextIO, macros_dic_ptr: list[dict], defines_dic_ptr: list[dict]):
+def resolve_macro(target_path, f_target: TextIO, macros_dic_ptr: list[dict]):
     macros_expanded = False
 
     output_buffer = ''
     nomacrodef_buffer: list = []
-    defines_found = defines_dic_ptr[0] # #DEFINE NAME VALUE
+    defines_found = {} # #DEFINE NAME VALUE
     buffer = f_target.readlines() # File buffer
     buffer = check_import(target_path, copy.deepcopy(buffer), [])
     macros_dic_find, nomacrodef_buffer = search_macros(buffer) # macros_dic: {macro_name: [[line0], [line1], [...]]}
@@ -126,25 +126,6 @@ def resolve_macro(target_path, f_target: TextIO, macros_dic_ptr: list[dict], def
 
     if macros_dic_find != {}:
         macros_expanded = True
-
-    for i in range(len(nomacrodef_buffer)): # read defines
-        line = nomacrodef_buffer[i]
-
-        if line[0] == '#DEFINE':
-            define_value = ' '.join(line[2:])
-            defines_dic_ptr[0][line[1]] = define_value
-            nomacrodef_buffer[i] = None # I clean this in other loop
-
-    while True: # Clean none in nomacrodef_buffer
-        re_start = False
-
-        for i in range(len(nomacrodef_buffer)):
-            if nomacrodef_buffer[i] == None:
-                nomacrodef_buffer = nomacrodef_buffer[:i] + nomacrodef_buffer[i + 1:]
-                re_start = True
-                break
-
-        if not re_start: break
 
     while True: # Expand all macros
         expand_target = None
@@ -203,15 +184,36 @@ def resolve_macro(target_path, f_target: TextIO, macros_dic_ptr: list[dict], def
         else:
             break
 
-    for i in range(len(nomacrodef_buffer)): # expand defines in the end
-        line = nomacrodef_buffer[i]
+    # DEFINES CODE
+    last_idx = 0
+    while True: # Clean none in nomacrodef_buffer
+        re_start = False
+        
+        for i in range(last_idx, len(nomacrodef_buffer)): # read and expand defines in the end
+            line = nomacrodef_buffer[i]
 
-        for k in range(len(line)):
-            string = nomacrodef_buffer[i][k]
+            if line[0] == '#DEFINE':
+                for k in range(2, len(line)):
+                    string = nomacrodef_buffer[i][k]
 
-            if string in defines_found:
-                nomacrodef_buffer[i][k] = defines_found[string]
-                macros_expanded = True # This is important
+                    if string in defines_found:
+                        nomacrodef_buffer[i][k] = defines_found[string]
+                        macros_expanded = True # This is important
+                define_value = ' '.join(line[2:])
+                defines_found[line[1]] = define_value
+                nomacrodef_buffer = nomacrodef_buffer[:i] + nomacrodef_buffer[i + 1:]
+                re_start = True
+                last_idx = i
+                break
+
+            for k in range(len(line)):
+                string = nomacrodef_buffer[i][k]
+
+                if string in defines_found:
+                    nomacrodef_buffer[i][k] = defines_found[string]
+                    macros_expanded = True # This is important
+
+        if not re_start: break
 
     # File write
     for elements_arr in nomacrodef_buffer:

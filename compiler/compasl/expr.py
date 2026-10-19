@@ -8,7 +8,7 @@ def expr_handler(args: list[str]): # return success, result
     result = ''
     cmd = args[0]
 
-    if cmd in ('CONCAT', 'AT', 'FILTER', 'ESPACE', 'ENDLINE', 'UPPER', 'LOWER'):
+    if cmd in ('CONCAT', 'AT', 'FILTER', 'ESPACE', 'ENDLINE', 'UPPER', 'LOWER', 'JOIN', 'IFEQ'):
         if cmd == 'CONCAT':
             result = args[1] + args[2] # CONCAT STR_A STR_B ex: CONCAT A B out: AB
         if cmd == 'AT':
@@ -23,6 +23,10 @@ def expr_handler(args: list[str]): # return success, result
             result = args[1].upper()
         if cmd == 'LOWER':
             result = args[1].lower()
+        if cmd == 'JOIN': # JOIN STR SEPARATOR
+            result = args[-1].join(args[1:-1])
+        if cmd == 'IFEQ': # IFEQ A B IFTRUE IFFALSE example: IFEQ A A Y N -> Y, another ex: IFEQ A B Y N -> N
+            result = args[3] if args[1] == args[2] else args[4]
         success = True
 
     return success, result
