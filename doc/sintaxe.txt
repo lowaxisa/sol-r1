@@ -136,3 +136,13 @@ for ex: ( LOWER HELLO ) - hello
 
 suport aninhed expressions example:
 ( CONCAT A ( FILTER ( AT WATER 1 ) A B C ERR ) ) - AA
+
+--- Labels:
+Labels is a idx rotule for example
+
+0 - NOP
+1 - MYLABEL: # Is a rotule so this is removed and code go to here
+1 - HALT
+2 - MYLABELADDRLOW # 1
+
+supports ADDRLOW, ADDRHIGH, PAGELOW, PAGEHIGH

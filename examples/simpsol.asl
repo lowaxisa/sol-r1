@@ -2,8 +2,20 @@
 ; This is a basic asl lib
 
 ; Imediate helpers
-#MACRO IMM8 ; REG, VALUE_HIGH, VALUE_LOW
-    IMMH #ARG2
-    IMML #ARG3
+#MACRO IMM8 ; REG, VALUE_HIGH, VALUE_LOW or just REG, VALUE
+    IMMH ( AT ( CONCAT #ARG2 #ARG3 ) 0 )
+    IMML ( AT ( CONCAT #ARG2 #ARG3 ) 1 )
     IMM #ARG1
+#MACRO
+
+; Jump helpers
+#MACRO JMPTO ; JMPMODE LABEL
+    IMMH ( CONCAT #ARG2 ADDRHIGH )
+    IMML ( CONCAT #ARG2 ADDRLOW )
+    IMM RA
+    IMMH ( CONCAT #ARG2 PAGEHIGH )
+    IMML ( CONCAT #ARG2 PAGELOW )
+    IMM RP
+    DECRFP ; Fix jump aling
+    #ARG1
 #MACRO

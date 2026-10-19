@@ -12,6 +12,7 @@ from typing import TextIO
 # Compiler components
 from compiler.compasl.macro import resolve_macro
 from compiler.compasl.expr import resolve_expr
+from compiler.compasl.label import resolve_label
 
 def _compasl(target_path, f_target: TextIO, f_output: TextIO):
     f_output.flush()
@@ -38,3 +39,5 @@ def _compasl(target_path, f_target: TextIO, f_output: TextIO):
 
     f_output.flush()
     f_output.seek(0)
+    resolve_label(f_output)
+    f_output.flush()
