@@ -42,14 +42,25 @@
 #MACRO
 
 #MACRO CALL ; LABEL - Push RP, RA, jmp to LABEL
-    PUSH RA
     PUSH RP
-    JMPTO #ARG1
+    PUSH RA
+    PC ; RFP = ACTUAL PC
+    PUSH RP         ; cost 2 inst
+    PUSH RA         ; cost 2 inst
+    JMPTO JMP #ARG1 ; cost 8 inst - 12 inst in total, i make a compensation in RET
+    POP RA
+    POP RP
 #MACRO
 
 #MACRO RET ; Pop RA, RP and JMP
     POP RA
     POP RP
+
+    ; 4 inc x 3 = 12
+    ( JOIN INCRFP INCRFP INCRFP INCRFP ( ENDLINE ) ( ENDLINE ) )
+    ( JOIN INCRFP INCRFP INCRFP INCRFP ( ENDLINE ) ( ENDLINE ) )
+    ( JOIN INCRFP INCRFP INCRFP INCRFP ( ENDLINE ) ( ENDLINE ) )
+
     JMP
 #MACRO
 
@@ -98,4 +109,18 @@
     LOADP1 #ARG1
     POP P1L
     POP P1H
+#MACRO
+
+#MACRO RAMSET ; DEST, REG or 8 bits value - Set RAM[DEST] = REG/VALUE
+    PUSH P2H
+    PUSH P2L
+    PUSH ACC ; Use to store temp value
+
+    ( IFEQ ( FILTER #ARG2 ACC BASE COUNT RP RA SP SA P1H P1L P2H P2L H1 H2 H3 H4 FL FALSE ) FALSE ( JOIN IMM8 ACC #ARG2 ( ENDLINE ) ( ESPACE ) ) ( JOIN AGET #ARG2 ( ENDLINE ) ( ESPACE ) ) )
+    IMMP P2F #ARG1
+    STOREP2 ACC
+    
+    POP ACC
+    POP P2L
+    POP P2H
 #MACRO

@@ -134,6 +134,17 @@ for ex: ( UPPER hello ) - HELLO
 LOWER: sintaxe ( LOWER STR )
 for ex: ( LOWER HELLO ) - hello
 
+JOIN: sintaxe ( JOIN STRLIST SEPARATOR )
+ex: ( JOIN A B C - ) - A-B-C
+
+IFEQ: sintaxe ( IFEQ PARAM_A PARAM_B IF_TRUE IF_FALSE )
+ex: ( IFEQ A A TRUE FALSE ) - TRUE
+ex2: ( IFEQ A B ( CONCAT JMP ( NONE ) ) ( CONCAT HALT ( NONE ) ) ) - HALT
+
+NONE: sintaxe ( NONE )
+return '' so the use for ex:
+( JOIN A B C ( NONE ) ) - ABC
+
 suport aninhed expressions example:
 ( CONCAT A ( FILTER ( AT WATER 1 ) A B C ERR ) ) - AA
 
