@@ -29,9 +29,9 @@ def cmdhandler(cmd: str, stdscr): # Lembrar q apos isso ja apeenda o '> '
         string = '' if not len(cmd_arr) else cmd_arr[0]
         cmd_find = False
 
-        for cmdstr in cmd_list:
+        for cmdstr in cmd_dic:
             if cmdstr == string:
-                cmd_list[cmdstr](cmd_arr)
+                cmd_dic[cmdstr](cmd_arr)
                 cmd_find = True
                 break
 
@@ -125,15 +125,20 @@ def cmd_exit(cmd_arr):
     global running
     running = False
 
+help_list: list = [
+    'Command list:',
+    'help - show this message',
+    'exit - stop program',
+    'load - select .hex file',
+    'init - start vm',
+    'comp - compile a .sol file',
+    'soap - clear screen',
+    'tick - frequence of cpu vm',
+    'tape - load modules in launcher',
+]
 def cmd_help(cmd_arr):
-    sprint('Command list:')
-    sprint('help - show this message')
-    sprint('exit - stop program')
-    sprint('load - select .hex file')
-    sprint('init - start vm')
-    sprint('comp - compile a .sol file')
-    sprint('soap - clear screen')
-    sprint('tick - frequence of cpu vm')
+    for help_msg in help_list:
+        sprint(help_msg)
 
 def cmd_load(cmd_arr):
     global file
@@ -168,8 +173,29 @@ def cmd_tick(cmd_arr):
     if len(cmd_arr) == 2:
         tick = float(cmd_arr[1])
 
+def cmd_tape(cmd_arr): # tape module
+    global cmd_dic
+
+    if len(cmd_arr) == 2:
+        module_path = cmd_arr[1]
+        module_basename: str = os.path.basename(module_path)
+        module_name = module_basename.split('.')[0] # get for example input of input.py
+
+        spec = importlib.util.spec_from_file_location(module_name, module_path)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = module
+        spec.loader.exec_module(module)
+
+        target = module.target # is a str or None
+        if target != None:
+            cmd_dic[target] = module.execute
+        module.msg(sprint)
+        module.context(cmd_dic, help_list)
+    else:
+        sprint('tape usage: tape file.py')
+
 # Command dictonary
-cmd_list: dict = {
+cmd_dic: dict = {
     'exit': cmd_exit,
     'help': cmd_help,
     'load': cmd_load,
@@ -177,6 +203,7 @@ cmd_list: dict = {
     'comp': cmd_comp,
     'soap': cmd_soap,
     'tick': cmd_tick,
+    'tape': cmd_tape,
 }
 
 if __name__ == '__main__':
