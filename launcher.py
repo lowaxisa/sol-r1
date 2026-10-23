@@ -186,11 +186,7 @@ def cmd_tape(cmd_arr): # tape module
         sys.modules[module_name] = module
         spec.loader.exec_module(module)
 
-        target = module.target # is a str or None
-        if target != None:
-            cmd_dic[target] = module.execute
-        module.msg(sprint)
-        module.context(cmd_dic, help_list)
+        module.init(context)
     else:
         sprint('tape usage: tape file.py')
 
@@ -205,6 +201,13 @@ cmd_dic: dict = {
     'tick': cmd_tick,
     'tape': cmd_tape,
 }
+
+context: dict = {
+    'sprint': sprint,
+    'help_list': help_list,
+    'cmd_dic': cmd_dic,
+    'stdscrptr': stdscrptr,
+} # Dicionario que passo na funcao init de um modulo
 
 if __name__ == '__main__':
     curses.wrapper(main)
